@@ -7,7 +7,9 @@
     categories: 'love_memorial_categories',
     goals: 'love_memorial_goals',
     messages: 'love_memorial_messages',
-    about: 'love_memorial_about'
+    about: 'love_memorial_about',
+    locations: 'love_memorial_locations',
+    reminderSettings: 'love_memorial_reminder_settings'
   };
 
   var MAX_PHOTO_SIZE = 600;
@@ -566,6 +568,199 @@
     }, 1200);
   }
 
+  // ----- 共享位置 -----
+  function getLocations() {
+    var list = getJSON(STORAGE_KEYS.locations, []);
+    return Array.isArray(list) ? list : [];
+  }
+
+  function saveLocations(list) {
+    setJSON(STORAGE_KEYS.locations, list);
+  }
+
+  function renderLocations() {
+    var list = getLocations();
+    var el = byId('location-list');
+    var empty = byId('location-empty');
+    if (!el) return;
+    el.innerHTML = '';
+    list.forEach(function (loc) {
+      var li = document.createElement('li');
+      li.className = 'location-item';
+      var name = document.createElement('span');
+      name.className = 'location-name';
+      name.textContent = loc.name || '未命名';
+      var note = loc.note ? document.createElement('span') : null;
+      if (note) {
+        note.className = 'location-note';
+        note.textContent = loc.note;
+      }
+      var openMap = document.createElement('button');
+      openMap.type = 'button';
+      openMap.className = 'btn-cute small';
+      openMap.textContent = '地图';
+      openMap.addEventListener('click', function () {
+        if (loc.lat != null && loc.lng != null) {
+          window.open('https://www.google.com/maps?q=' + loc.lat + ',' + loc.lng, '_blank');
+        }
+      });
+      var del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'location-del';
+      del.textContent = '×';
+      del.addEventListener('click', function () {
+        saveLocations(getLocations().filter(function (x) { return x.id !== loc.id; }));
+        renderLocations();
+      });
+      li.appendChild(name);
+      if (note) li.appendChild(note);
+      li.appendChild(openMap);
+      li.appendChild(del);
+      el.appendChild(li);
+    });
+    if (empty) empty.classList.toggle('visible', list.length === 0);
+  }
+
+  function initLocations() {
+    renderLocations();
+    byId('location-add-btn').addEventListener('click', function () {
+      var name = (byId('location-name').value || '').trim();
+      var note = (byId('location-note').value || '').trim();
+      var latStr = (byId('location-lat').value || '').trim();
+      var lngStr = (byId('location-lng').value || '').trim();
+      if (!name) return;
+      var lat = latStr ? parseFloat(latStr) : null;
+      var lng = lngStr ? parseFloat(lngStr) : null;
+      if (isNaN(lat)) lat = null;
+      if (isNaN(lng)) lng = null;
+      var list = getLocations();
+      list.push({ id: genId(), name: name, note: note || '', lat: lat, lng: lng, createdAt: Date.now() });
+      saveLocations(list);
+      byId('location-name').value = '';
+      byId('location-note').value = '';
+      byId('location-lat').value = '';
+      byId('location-lng').value = '';
+      renderLocations();
+    });
+    byId('location-get-here').addEventListener('click', function () {
+      if (!navigator.geolocation) {
+        alert('当前浏览器不支持获取位置');
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        function (pos) {
+          byId('location-lat').value = pos.coords.latitude.toFixed(6);
+          byId('location-lng').value = pos.coords.longitude.toFixed(6);
+        },
+        function () { alert('无法获取位置，请检查权限或稍后重试'); }
+      );
+    });
+  }
+
+  // ----- 消息提醒 -----
+  function getReminderSettings() {
+    return getJSON(STORAGE_KEYS.reminderSettings, {
+      advanceDays: 0,
+      dailyTime: '20:00',
+      dailyOn: false,
+      lastNotifiedDate: null
+    }) || {};
+  }
+
+  function saveReminderSettings(s) {
+    setJSON(STORAGE_KEYS.reminderSettings, s);
+  }
+
+  function requestNotificationPermission(cb) {
+    if (!('Notification' in window)) {
+          if (cb) cb(false);
+          return;
+        }
+    if (Notification.permission === 'granted') {
+      if (cb) cb(true);
+      return;
+    }
+    if (Notification.permission !== 'denied') {
+      Notification.requestPermission().then(function (p) {
+        if (cb) cb(p === 'granted');
+      });
+    } else if (cb) cb(false);
+  }
+
+  function showNotification(title, body) {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    try {
+      new Notification(title, { body: body, icon: '/favicon.ico' });
+    } catch (e) {}
+  }
+
+  function checkReminders() {
+    var s = getReminderSettings();
+    var start = getStartDate();
+    if (!start) return;
+    var now = new Date();
+    var today = now.getFullYear() + '-' + (now.getMonth() + 1) + '-' + now.getDate();
+    var startMonth = start.getMonth();
+    var startDate = start.getDate();
+    var advance = parseInt(s.advanceDays, 10) || 0;
+    var lastNotified = s.lastNotifiedDate || '';
+
+    for (var d = 0; d <= advance; d++) {
+      var t = new Date(now);
+      t.setDate(t.getDate() + d);
+      var tm = t.getMonth();
+      var td = t.getDate();
+      if (tm === startMonth && td === startDate) {
+        var key = t.getFullYear() + '-' + (tm + 1) + '-' + td;
+        if (lastNotified !== key) {
+          showNotification('纪念日提醒', d === 0 ? '今天是我们在一起的纪念日哦～' : '还有 ' + d + ' 天就是纪念日啦！');
+          s.lastNotifiedDate = key;
+          saveReminderSettings(s);
+        }
+        return;
+      }
+    }
+
+    if (s.dailyOn && s.dailyTime) {
+      var parts = s.dailyTime.split(':');
+      var h = parseInt(parts[0], 10) || 20;
+      var m = parseInt(parts[1], 10) || 0;
+      if (now.getHours() === h && now.getMinutes() === m && lastNotified !== today) {
+        showNotification('每日提醒', '来看看我们的纪念站吧～');
+        s.lastNotifiedDate = today;
+        saveReminderSettings(s);
+      }
+    }
+  }
+
+  function initReminders() {
+    var s = getReminderSettings();
+    var advanceEl = byId('reminder-advance');
+    var timeEl = byId('reminder-daily-time');
+    var dailyOnEl = byId('reminder-daily-on');
+    if (advanceEl) advanceEl.value = String(s.advanceDays !== undefined ? s.advanceDays : 0);
+    if (timeEl) timeEl.value = s.dailyTime || '20:00';
+    if (dailyOnEl) dailyOnEl.checked = !!s.dailyOn;
+
+    byId('reminder-request-btn').addEventListener('click', function () {
+      requestNotificationPermission(function (ok) {
+        alert(ok ? '已开启通知' : '请手动允许通知权限');
+      });
+    });
+
+    byId('reminder-save-btn').addEventListener('click', function () {
+      var s = getReminderSettings();
+      s.advanceDays = parseInt((byId('reminder-advance') || {}).value, 10) || 0;
+      s.dailyTime = (byId('reminder-daily-time') || {}).value || '20:00';
+      s.dailyOn = !!(byId('reminder-daily-on') && byId('reminder-daily-on').checked);
+      saveReminderSettings(s);
+      showSavedTip(byId('reminder-save-btn'));
+    });
+
+    setInterval(checkReminders, 60000);
+    checkReminders();
+  }
+
   // ----- 入口 -----
   function init() {
     initNav();
@@ -574,6 +769,8 @@
     initGoals();
     initMessages();
     initAbout();
+    initLocations();
+    initReminders();
   }
 
   if (document.readyState === 'loading') {
