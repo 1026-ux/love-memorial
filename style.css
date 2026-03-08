@@ -1,0 +1,844 @@
+/* ===== 情侣纪念站 - 涂鸦手绘风样式 ===== */
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=ZCOOL+KuaiLe&family=Ma+Shan+Zheng&display=swap');
+
+:root {
+  --macaron-pink: #ffb5c2;
+  --macaron-mint: #b8e6d5;
+  --macaron-lavender: #e4d5f7;
+  --macaron-peach: #ffdab9;
+  --macaron-blue: #b5d8ff;
+  --macaron-yellow: #fff4b5;
+  --ink-brown: #5c4033;
+  --ink-soft: #7d6e63;
+  --paper: #faf6f0;
+  --paper-dark: #f0e9e0;
+  --tape-yellow: rgba(255, 236, 179, 0.65);
+  --tape-pink: rgba(255, 182, 193, 0.55);
+  --tape-mint: rgba(184, 230, 213, 0.5);
+  --shadow-soft: 3px 4px 0 rgba(92, 64, 51, 0.14);
+  --shadow-sketch: 2px 2px 0 rgba(92, 64, 51, 0.2);
+  --radius-doodle: 255px 15px 225px 15px/15px 225px 15px 255px;
+  --radius-card: 18px 22px 16px 20px;
+  --font-doodle: 'Caveat', 'Ma Shan Zheng', cursive;
+  --font-title: 'ZCOOL KuaiLe', cursive;
+  --font-body: 'Ma Shan Zheng', 'Microsoft YaHei', sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--ink-brown);
+  background: var(--paper);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* 纸张纹理背景 - 牛皮纸/草稿质感 */
+.paper-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E"),
+    linear-gradient(160deg, #fdf8f3 0%, #f8f2ea 35%, #f5efe6 60%, #faf6f0 100%);
+}
+
+/* ===== 全局导航 ===== */
+.global-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: 10px 12px;
+  background: linear-gradient(180deg, rgba(255, 250, 245, 0.98), rgba(255, 245, 238, 0.98));
+  border-radius: 28px 28px 0 0;
+  box-shadow: 0 -6px 24px rgba(92, 64, 51, 0.1);
+  border: 3px solid var(--ink-brown);
+  border-bottom: none;
+}
+
+.nav-inner {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 10px;
+  text-decoration: none;
+  color: var(--ink-soft);
+  font-size: 0.75rem;
+  border-radius: 16px;
+  transition: transform 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.nav-item:hover {
+  color: var(--ink-brown);
+  transform: translateY(-3px) scale(1.05);
+  background: var(--macaron-pink);
+  box-shadow: 2px 3px 0 rgba(92, 64, 51, 0.15);
+}
+
+.nav-item.active {
+  color: var(--ink-brown);
+  background: var(--macaron-mint);
+  font-weight: bold;
+}
+
+.nav-icon {
+  font-size: 1.4rem;
+}
+
+/* ===== 主内容区 ===== */
+.main-content {
+  padding: 20px 16px 100px;
+  max-width: 720px;
+  margin: 0 auto;
+  min-height: 100vh;
+}
+
+.page {
+  display: none;
+  position: relative;
+  animation: pageIn 0.35s ease;
+}
+
+.page.active {
+  display: block;
+}
+
+@keyframes pageIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 涂鸦标题 - 手写感 */
+.doodle-title {
+  font-family: var(--font-doodle);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--ink-brown);
+  text-align: center;
+  margin-bottom: 1.25rem;
+  text-shadow: 1px 2px 0 var(--macaron-pink), -0.5px 0.5px 0 rgba(255,255,255,0.8);
+  letter-spacing: 0.02em;
+}
+
+.page-title {
+  margin-bottom: 1.5rem;
+}
+
+/* ===== 首页倒计时 ===== */
+.countdown-wrap {
+  position: relative;
+  background: linear-gradient(145deg, var(--macaron-mint), var(--macaron-blue));
+  border: 3px solid var(--ink-brown);
+  border-radius: var(--radius-doodle);
+  padding: 2rem 1.5rem;
+  box-shadow: var(--shadow-soft);
+  margin-top: 1rem;
+  animation: countdownGlow 4s ease-in-out infinite;
+}
+
+@keyframes countdownGlow {
+  0%, 100% { box-shadow: var(--shadow-soft), 0 0 0 0 rgba(184, 230, 213, 0.3); }
+  50% { box-shadow: var(--shadow-soft), 0 0 30px 2px rgba(184, 230, 213, 0.4); }
+}
+
+.countdown-display {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: baseline;
+  gap: 0.25rem 0.5rem;
+  margin: 1.5rem 0 1rem;
+}
+
+.countdown-block {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.75);
+  border: 2px solid var(--ink-brown);
+  border-radius: var(--radius-card);
+  padding: 0.5rem 0.75rem;
+  min-width: 56px;
+  box-shadow: var(--shadow-sketch);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.countdown-block:hover {
+  transform: scale(1.05) rotate(-0.5deg);
+  box-shadow: 4px 4px 0 rgba(92, 64, 51, 0.2);
+}
+
+.countdown-num {
+  font-family: var(--font-title);
+  font-size: 1.75rem;
+  line-height: 1.2;
+  color: var(--ink-brown);
+  animation: countdownPulse 2s ease-in-out infinite;
+}
+
+@keyframes countdownPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.95; transform: scale(1.02); }
+}
+
+.countdown-label {
+  font-size: 0.7rem;
+  color: var(--ink-soft);
+}
+
+.countdown-dot {
+  font-family: var(--font-title);
+  font-size: 1.5rem;
+  color: var(--ink-brown);
+  animation: blink 1s ease-in-out infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0.5; }
+}
+
+.countdown-hint {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  margin-bottom: 1rem;
+}
+
+.set-date-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+}
+
+.sticky-label {
+  width: 100%;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.doodle-input {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  padding: 10px 14px;
+  border: 2px solid var(--ink-brown);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--ink-brown);
+  max-width: 200px;
+}
+
+.doodle-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--macaron-pink);
+}
+
+/* 可爱按钮 */
+.btn-cute {
+  font-family: var(--font-title);
+  font-size: 1rem;
+  padding: 10px 20px;
+  border: 2px solid var(--ink-brown);
+  border-radius: 24px;
+  background: var(--macaron-pink);
+  color: var(--ink-brown);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  box-shadow: 2px 2px 0 rgba(92, 64, 51, 0.2);
+}
+
+.btn-cute:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 4px 5px 0 rgba(92, 64, 51, 0.28);
+  background: #ff9faf;
+}
+
+.btn-cute:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.btn-cute.small {
+  padding: 6px 14px;
+  font-size: 0.9rem;
+}
+
+.btn-cute.danger {
+  background: #ffb5b5;
+}
+
+.btn-cute.danger:hover {
+  background: #ff9999;
+}
+
+/* 胶带装饰 - 拼贴感 */
+.tape {
+  position: absolute;
+  width: 56px;
+  height: 22px;
+  background: var(--tape-yellow);
+  transform: rotate(-22deg);
+  opacity: 0.92;
+  border-radius: 2px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+  pointer-events: none;
+}
+
+.tape-1 { top: -6px; left: 18%; }
+.tape-2 { top: -6px; right: 18%; background: var(--tape-pink); transform: rotate(24deg); }
+.tape-3 { top: 8px; right: 12%; background: var(--tape-mint); transform: rotate(18deg); }
+.tape-4 { top: 8px; left: 12%; background: var(--tape-pink); transform: rotate(26deg); }
+.tape-5 { top: 8px; right: 22%; }
+.tape-6 { top: 8px; left: 22%; background: var(--tape-pink); transform: rotate(-20deg); }
+
+/* ===== 相册 ===== */
+.album-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 1rem;
+  align-items: center;
+}
+
+.doodle-select {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  padding: 8px 12px;
+  border: 2px solid var(--ink-brown);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--ink-brown);
+  min-width: 120px;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 100px;
+  max-width: 200px;
+}
+
+.upload-btn-wrap {
+  cursor: pointer;
+}
+
+.add-category-wrap {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.album-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 16px;
+}
+
+.album-item {
+  position: relative;
+  aspect-ratio: 1;
+  border: 3px solid var(--ink-brown);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--paper-dark);
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.album-item:hover {
+  transform: rotate(-2deg) scale(1.04);
+  box-shadow: 5px 6px 0 rgba(92, 64, 51, 0.22);
+}
+
+.album-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.album-item .album-category-tag {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(92, 64, 51, 0.75);
+  color: #fff;
+  font-size: 0.7rem;
+  padding: 4px 6px;
+  text-align: center;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--ink-soft);
+  font-size: 1rem;
+  display: none;
+}
+
+.empty-state.visible {
+  display: block;
+}
+
+/* ===== 目标清单 ===== */
+.goal-add-wrap {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.goal-add-wrap .doodle-input {
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.goal-filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 1rem;
+}
+
+.filter-btn {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  padding: 6px 14px;
+  border: 2px solid var(--ink-brown);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-btn:hover,
+.filter-btn.active {
+  background: var(--macaron-lavender);
+  color: var(--ink-brown);
+}
+
+.goal-list {
+  list-style: none;
+}
+
+.goal-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  background: linear-gradient(135deg, var(--macaron-peach), var(--macaron-yellow));
+  border: 2px solid var(--ink-brown);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.goal-item:hover {
+  transform: translateX(6px) rotate(0.3deg);
+  box-shadow: 4px 5px 0 rgba(92, 64, 51, 0.18);
+}
+
+.goal-item.done {
+  background: linear-gradient(135deg, var(--macaron-mint), #d4f0e8);
+  opacity: 0.9;
+}
+
+.goal-item.done .goal-text {
+  text-decoration: line-through;
+  color: var(--ink-soft);
+}
+
+.goal-checkbox {
+  width: 24px;
+  height: 24px;
+  accent-color: var(--ink-brown);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.goal-text {
+  flex: 1;
+  font-size: 1rem;
+  word-break: break-word;
+}
+
+.goal-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.goal-edit-btn,
+.goal-del-btn {
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--ink-brown);
+  border-radius: 50%;
+  background: rgba(255,255,255,0.8);
+  cursor: pointer;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.goal-edit-btn:hover,
+.goal-del-btn:hover {
+  transform: scale(1.1);
+  background: var(--macaron-pink);
+}
+
+/* ===== 留言板 ===== */
+.message-add-wrap {
+  margin-bottom: 1.5rem;
+}
+
+.doodle-textarea {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid var(--ink-brown);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--ink-brown);
+  resize: vertical;
+  margin-bottom: 10px;
+}
+
+.doodle-textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--macaron-lavender);
+}
+
+.doodle-textarea.full {
+  min-height: 120px;
+}
+
+.message-board {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+  align-content: flex-start;
+}
+
+.message-note {
+  position: relative;
+  padding: 16px 18px;
+  min-width: 160px;
+  max-width: 280px;
+  background: linear-gradient(145deg, var(--macaron-yellow), var(--macaron-peach));
+  border: 2px solid var(--ink-brown);
+  border-radius: 8px 12px 8px 4px;
+  box-shadow: var(--shadow-soft);
+  transform: rotate(-0.8deg);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.message-note:nth-child(even) {
+  transform: rotate(1deg);
+  background: linear-gradient(145deg, var(--macaron-lavender), #e8dcf7);
+}
+
+.message-note:hover {
+  transform: rotate(0deg) scale(1.03);
+  box-shadow: 4px 5px 0 rgba(92, 64, 51, 0.2);
+}
+
+.message-note .note-text {
+  font-size: 0.95rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.message-note .note-time {
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  margin-top: 8px;
+}
+
+.message-note .note-del {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  transition: color 0.2s ease;
+}
+
+.message-note .note-del:hover {
+  color: var(--ink-brown);
+}
+
+/* ===== 关于我们 ===== */
+.about-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.doodle-card {
+  background: linear-gradient(145deg, rgba(255,255,255,0.96), var(--paper-dark));
+  border: 3px solid var(--ink-brown);
+  border-radius: var(--radius-doodle);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-soft);
+  position: relative;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.doodle-card:hover {
+  box-shadow: 5px 6px 0 rgba(92, 64, 51, 0.18);
+}
+
+.about-card-title {
+  font-family: var(--font-doodle);
+  font-size: 1.35rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--ink-brown);
+}
+
+.about-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 1rem;
+}
+
+.about-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+
+.about-fields .doodle-input {
+  max-width: 100%;
+}
+
+.about-card .btn-cute {
+  margin-top: 8px;
+}
+
+/* ===== 弹层 ===== */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal.active {
+  display: flex;
+  animation: fadeIn 0.25s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(92, 64, 51, 0.3);
+}
+
+.modal-content {
+  position: relative;
+  background: var(--paper);
+  border: 3px solid var(--ink-brown);
+  border-radius: 20px;
+  padding: 1.5rem;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow: auto;
+  box-shadow: 6px 8px 0 rgba(92, 64, 51, 0.2);
+  animation: modalIn 0.3s ease;
+}
+
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border: 2px solid var(--ink-brown);
+  border-radius: 50%;
+  background: var(--macaron-pink);
+  color: var(--ink-brown);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.modal-close:hover {
+  transform: scale(1.1);
+}
+
+.photo-modal-content {
+  padding: 0;
+  overflow: hidden;
+}
+
+.photo-modal-content img {
+  width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  display: block;
+}
+
+.photo-modal-info {
+  padding: 12px 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--paper-dark);
+}
+
+.caption-input {
+  max-width: 100%;
+  width: 100%;
+}
+
+.photo-modal-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+#goal-edit-modal .doodle-input {
+  width: 100%;
+  max-width: 100%;
+  margin: 10px 0;
+}
+
+#goal-edit-modal h3 {
+  font-family: var(--font-title);
+  margin-bottom: 4px;
+}
+
+/* ===== 响应式 ===== */
+@media (min-width: 480px) {
+  .nav-inner {
+    padding: 0 8px;
+  }
+
+  .countdown-num {
+    font-size: 2rem;
+  }
+
+  .countdown-block {
+    min-width: 64px;
+    padding: 0.6rem 0.9rem;
+  }
+
+  .album-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
+}
+
+@media (min-width: 640px) {
+  .global-nav {
+    bottom: auto;
+    top: 0;
+    border-radius: 0 0 24px 24px;
+    border-bottom: 3px solid var(--ink-brown);
+  }
+
+  .main-content {
+    padding: 100px 24px 40px;
+  }
+
+  .about-cards {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .about-card {
+    flex: 1;
+    min-width: 260px;
+  }
+}
+
+@media (max-width: 380px) {
+  .countdown-display {
+    gap: 0.2rem;
+  }
+
+  .countdown-block {
+    min-width: 48px;
+    padding: 0.4rem 0.5rem;
+  }
+
+  .countdown-num {
+    font-size: 1.4rem;
+  }
+
+  .nav-text {
+    font-size: 0.65rem;
+  }
+}

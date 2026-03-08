@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>我们的纪念日 · 情侣小站</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="paper-bg"></div>
+
+  <nav class="global-nav">
+    <div class="nav-inner">
+      <a href="#" class="nav-item active" data-page="home">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-text">首页</span>
+      </a>
+      <a href="#" class="nav-item" data-page="album">
+        <span class="nav-icon">📷</span>
+        <span class="nav-text">相册</span>
+      </a>
+      <a href="#" class="nav-item" data-page="goals">
+        <span class="nav-icon">✅</span>
+        <span class="nav-text">目标</span>
+      </a>
+      <a href="#" class="nav-item" data-page="messages">
+        <span class="nav-icon">💌</span>
+        <span class="nav-text">留言</span>
+      </a>
+      <a href="#" class="nav-item" data-page="about">
+        <span class="nav-icon">💕</span>
+        <span class="nav-text">我们</span>
+      </a>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    <!-- 首页：倒计时 -->
+    <section id="page-home" class="page active">
+      <div class="countdown-wrap">
+        <h1 class="doodle-title">我们在一起</h1>
+        <div class="countdown-display">
+          <div class="countdown-block">
+            <span class="countdown-num" id="days">0</span>
+            <span class="countdown-label">天</span>
+          </div>
+          <div class="countdown-dot">:</div>
+          <div class="countdown-block">
+            <span class="countdown-num" id="hours">00</span>
+            <span class="countdown-label">时</span>
+          </div>
+          <div class="countdown-dot">:</div>
+          <div class="countdown-block">
+            <span class="countdown-num" id="minutes">00</span>
+            <span class="countdown-label">分</span>
+          </div>
+          <div class="countdown-dot">:</div>
+          <div class="countdown-block">
+            <span class="countdown-num" id="seconds">00</span>
+            <span class="countdown-label">秒</span>
+          </div>
+        </div>
+        <p class="countdown-hint">从 <strong id="start-date-display">选择纪念日</strong> 开始</p>
+        <div class="set-date-wrap">
+          <label class="sticky-label">纪念日日期</label>
+          <input type="date" id="start-date-input" class="doodle-input">
+          <button type="button" id="save-date-btn" class="btn-cute">保存</button>
+        </div>
+      </div>
+      <div class="tape tape-1"></div>
+      <div class="tape tape-2"></div>
+    </section>
+
+    <!-- 相册页 -->
+    <section id="page-album" class="page">
+      <h1 class="doodle-title page-title">甜蜜相册</h1>
+      <div class="album-toolbar">
+        <select id="album-category" class="doodle-select">
+          <option value="">全部分类</option>
+        </select>
+        <input type="text" id="album-search" class="doodle-input search-input" placeholder="搜索...">
+        <label class="upload-btn-wrap">
+          <input type="file" id="photo-upload" accept="image/*" multiple hidden>
+          <span class="btn-cute">上传照片</span>
+        </label>
+      </div>
+      <div class="add-category-wrap">
+        <input type="text" id="new-category-input" class="doodle-input" placeholder="新分类名">
+        <button type="button" id="add-category-btn" class="btn-cute small">添加分类</button>
+      </div>
+      <div id="album-grid" class="album-grid"></div>
+      <div id="album-empty" class="empty-state">还没有照片，上传第一张吧 ~</div>
+      <div class="tape tape-3"></div>
+    </section>
+
+    <!-- 目标计划页 -->
+    <section id="page-goals" class="page">
+      <h1 class="doodle-title page-title">共同目标</h1>
+      <div class="goal-add-wrap">
+        <input type="text" id="goal-input" class="doodle-input" placeholder="写下一个想一起完成的目标...">
+        <button type="button" id="goal-add-btn" class="btn-cute">添加</button>
+      </div>
+      <div class="goal-filters">
+        <button type="button" class="filter-btn active" data-filter="all">全部</button>
+        <button type="button" class="filter-btn" data-filter="pending">未完成</button>
+        <button type="button" class="filter-btn" data-filter="done">已完成</button>
+      </div>
+      <ul id="goal-list" class="goal-list"></ul>
+      <div id="goals-empty" class="empty-state">还没有目标，一起写一个吧 ~</div>
+      <div class="tape tape-4"></div>
+    </section>
+
+    <!-- 留言板页 -->
+    <section id="page-messages" class="page">
+      <h1 class="doodle-title page-title">留言小记</h1>
+      <div class="message-add-wrap">
+        <textarea id="message-input" class="doodle-textarea" placeholder="写一句甜甜的话..." rows="3"></textarea>
+        <button type="button" id="message-add-btn" class="btn-cute">贴上去</button>
+      </div>
+      <div id="message-board" class="message-board"></div>
+      <div id="messages-empty" class="empty-state">留言板空空的，写第一句吧 ~</div>
+      <div class="tape tape-5"></div>
+    </section>
+
+    <!-- 关于我们页 -->
+    <section id="page-about" class="page">
+      <h1 class="doodle-title page-title">关于我们</h1>
+      <div class="about-cards">
+        <div class="about-card doodle-card">
+          <h2 class="about-card-title">我们的故事</h2>
+          <textarea id="about-story" class="doodle-textarea full" placeholder="在这里写下你们的故事..."></textarea>
+          <button type="button" id="save-about-btn" class="btn-cute">保存</button>
+        </div>
+        <div class="about-card doodle-card">
+          <h2 class="about-card-title">我们俩</h2>
+          <div class="about-fields">
+            <label>
+              <span>昵称 1</span>
+              <input type="text" id="about-name1" class="doodle-input" placeholder="例如：小兔子">
+            </label>
+            <label>
+              <span>昵称 2</span>
+              <input type="text" id="about-name2" class="doodle-input" placeholder="例如：小熊">
+            </label>
+          </div>
+          <button type="button" id="save-names-btn" class="btn-cute">保存</button>
+        </div>
+      </div>
+      <div class="tape tape-6"></div>
+    </section>
+  </main>
+
+  <!-- 照片预览弹层 -->
+  <div id="photo-modal" class="modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content photo-modal-content">
+      <button type="button" class="modal-close">×</button>
+      <img id="photo-modal-img" src="" alt="预览">
+      <div class="photo-modal-info">
+        <input type="text" id="photo-modal-caption" class="doodle-input caption-input" placeholder="添加说明...">
+        <div class="photo-modal-actions">
+          <button type="button" id="photo-save-caption-btn" class="btn-cute small">保存说明</button>
+          <button type="button" id="photo-delete-btn" class="btn-cute small danger">删除</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 目标编辑弹层 -->
+  <div id="goal-edit-modal" class="modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content doodle-card">
+      <button type="button" class="modal-close">×</button>
+      <h3>编辑目标</h3>
+      <input type="text" id="goal-edit-input" class="doodle-input">
+      <input type="hidden" id="goal-edit-id">
+      <button type="button" id="goal-save-edit-btn" class="btn-cute">保存</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
