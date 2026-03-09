@@ -99,6 +99,133 @@ body {
   font-size: 1.5rem;
 }
 
+/* 配对码横幅：置于导航栏之上，手机端也保证可见 */
+.pair-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 110;
+  background: var(--ins-card);
+  border-bottom: 1px solid var(--ins-border);
+  box-shadow: var(--ins-shadow);
+  padding: 10px 16px;
+  padding-top: max(10px, env(safe-area-inset-top));
+}
+
+.pair-banner-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.pair-label {
+  font-size: 0.9rem;
+  color: var(--ins-text-soft);
+}
+
+.pair-input {
+  width: 120px;
+  max-width: 120px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.pair-close {
+  margin-left: auto;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--ins-text-soft);
+  font-size: 1.4rem;
+  cursor: pointer;
+  line-height: 1;
+  border-radius: 50%;
+  transition: color 0.2s ease;
+}
+
+.pair-close:hover {
+  color: var(--ins-pink);
+}
+
+.pair-success {
+  max-width: 720px;
+  margin: 0 auto;
+  font-size: 0.9rem;
+  color: var(--ins-text-soft);
+  padding-top: 6px;
+}
+
+.pair-warn {
+  font-size: 0.85rem;
+  color: var(--ins-pink);
+  margin-left: 8px;
+}
+
+body.pair-banner-visible .main-content {
+  padding-top: 72px;
+}
+
+@media (max-width: 639px) {
+  body.pair-banner-visible .main-content {
+    padding-top: 88px;
+  }
+  .pair-banner {
+    padding: 12px 12px;
+    padding-top: max(12px, env(safe-area-inset-top));
+  }
+  .pair-banner-inner {
+    gap: 6px;
+  }
+  .pair-label {
+    width: 100%;
+    margin-bottom: 4px;
+  }
+}
+
+/* 更多页内的同步卡片（手机端主入口） */
+.pair-more-card {
+  margin-bottom: 1rem;
+}
+.pair-more-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pair-more-form .pair-input {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.pair-more-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pair-more-actions .btn-cute {
+  flex: 1;
+  min-width: 120px;
+}
+.pair-more-success {
+  font-size: 0.9rem;
+  color: var(--ins-text-soft);
+  padding: 8px 0;
+}
+
+.btn-cute.outline {
+  background: transparent;
+  color: var(--ins-pink);
+  border: 1px solid var(--ins-pink);
+}
+
+.btn-cute.outline:hover {
+  background: rgba(225, 48, 108, 0.08);
+}
+
 /* ===== 主内容区 ===== */
 .main-content {
   padding: 20px 16px 100px;

@@ -14,6 +14,301 @@
 
   var MAX_PHOTO_SIZE = 600;
   var PHOTO_QUALITY = 0.75;
+  var SYNC_PHOTO_SIZE = 400;
+  var SYNC_PHOTO_QUALITY = 0.6;
+
+  var ROOM_ID_KEY = 'love_memorial_roomId';
+  var firebaseApp = null;
+  var firebaseDb = null;
+  var cloudData = {};
+  var currentGoalFilter = 'all';
+
+  function isFirebaseEnabled() {
+    var c = typeof window !== 'undefined' && window.FIREBASE_CONFIG;
+    return !!(c && c.projectId && c.projectId !== 'YOUR_PROJECT_ID');
+  }
+
+  function isSyncMode() {
+    return isFirebaseEnabled() && getRoomId();
+  }
+
+  function getRoomId() {
+    return localStorage.getItem(ROOM_ID_KEY) || '';
+  }
+
+  function setRoomId(id) {
+    if (id) localStorage.setItem(ROOM_ID_KEY, id);
+  }
+
+  function initFirebaseIfNeeded() {
+    if (!isFirebaseEnabled() || firebaseApp) return true;
+    try {
+      firebaseApp = firebase.initializeApp(window.FIREBASE_CONFIG);
+      firebaseDb = firebase.firestore();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function cloudDocRef() {
+    if (!firebaseDb || !getRoomId()) return null;
+    return firebaseDb.collection('rooms').doc(getRoomId());
+  }
+
+  function cloudPhotosRef() {
+    var ref = cloudDocRef();
+    return ref ? ref.collection('photos') : null;
+  }
+
+  function ensureCloudDefaults() {
+    if (!cloudData.photos) cloudData.photos = [];
+    if (!cloudData.categories) cloudData.categories = [];
+    if (!cloudData.goals) cloudData.goals = [];
+    if (!cloudData.messages) cloudData.messages = [];
+    if (!cloudData.locations) cloudData.locations = [];
+    if (!cloudData.about) cloudData.about = {};
+    if (!cloudData.reminderSettings) cloudData.reminderSettings = {};
+  }
+
+  function refreshAll() {
+    renderCountdown();
+    syncCategorySelect();
+    renderAlbum();
+    renderGoals(currentGoalFilter);
+    renderMessages();
+    renderLocations();
+    var about = getAbout();
+    if (byId('about-story')) byId('about-story').value = about.story || '';
+    if (byId('about-name1')) byId('about-name1').value = about.name1 || '';
+    if (byId('about-name2')) byId('about-name2').value = about.name2 || '';
+    var s = getReminderSettings();
+    if (byId('reminder-advance')) byId('reminder-advance').value = String(s.advanceDays !== undefined ? s.advanceDays : 0);
+    if (byId('reminder-daily-time')) byId('reminder-daily-time').value = s.dailyTime || '20:00';
+    if (byId('reminder-daily-on')) byId('reminder-daily-on').checked = !!s.dailyOn;
+  }
+
+  function startCloudListen() {
+    var ref = cloudDocRef();
+    if (!ref) return;
+    ref.onSnapshot(function (snap) {
+      var data = snap.exists() ? snap.data() : {};
+      cloudData.startDate = data.startDate;
+      cloudData.categories = data.categories;
+      cloudData.goals = data.goals;
+      cloudData.messages = data.messages;
+      cloudData.locations = data.locations;
+      cloudData.about = data.about;
+      cloudData.reminderSettings = data.reminderSettings;
+      ensureCloudDefaults();
+      refreshAll();
+    }, function (err) { console.warn('Firestore listen error', err); });
+
+    var photosRef = cloudPhotosRef();
+    if (photosRef) {
+      photosRef.onSnapshot(function (snap) {
+        cloudData.photos = snap.docs.map(function (doc) {
+          var d = doc.data();
+          return { id: doc.id, data: d.data, category: d.category || '', caption: d.caption || '', createdAt: d.createdAt || 0 };
+        });
+        renderAlbum();
+        syncCategorySelect();
+      }, function (err) { console.warn('Firestore photos listen error', err); });
+    }
+  }
+
+  function writeCloud(key, value) {
+    var ref = cloudDocRef();
+    if (!ref) return Promise.resolve();
+    return ref.set({ [key]: value }, { merge: true });
+  }
+
+  function writeInitialRoomDoc() {
+    var ref = cloudDocRef();
+    if (!ref) return Promise.resolve();
+    var initial = {
+      categories: getJSON(STORAGE_KEYS.categories, []) || [],
+      goals: getJSON(STORAGE_KEYS.goals, []) || [],
+      messages: getJSON(STORAGE_KEYS.messages, []) || [],
+      locations: getJSON(STORAGE_KEYS.locations, []) || [],
+      about: getJSON(STORAGE_KEYS.about, {}) || {},
+      reminderSettings: getJSON(STORAGE_KEYS.reminderSettings, {}) || {},
+      startDate: localStorage.getItem(STORAGE_KEYS.startDate) || null
+    };
+    return ref.set(initial, { merge: true });
+  }
+
+  function ensureCloudDefaults() {
+    if (!cloudData.photos) cloudData.photos = [];
+    if (!cloudData.categories) cloudData.categories = [];
+    if (!cloudData.goals) cloudData.goals = [];
+    if (!cloudData.messages) cloudData.messages = [];
+    if (!cloudData.locations) cloudData.locations = [];
+    if (!cloudData.about) cloudData.about = {};
+    if (!cloudData.reminderSettings) cloudData.reminderSettings = {};
+  }
+
+  function initPairBanner() {
+    var banner = byId('pair-banner');
+    var inner = banner ? banner.querySelector('.pair-banner-inner') : null;
+    var success = byId('pair-success');
+    var codeDisplay = byId('pair-code-display');
+    if (!banner) return;
+
+    if (!isFirebaseEnabled()) {
+      banner.style.display = 'block';
+      if (inner) {
+        inner.innerHTML = '<span class="pair-label">与对象同步：</span>' +
+          '<span class="pair-warn">未检测到 Firebase 配置。请用 http://localhost 或部署后的网址打开本页，并确认 firebase-config.js 与 index.html 在同一目录且已填写 projectId。</span>' +
+          '<button type="button" class="pair-close" aria-label="关闭">×</button>';
+        inner.style.display = 'block';
+        var closeBtn = inner.querySelector('.pair-close');
+        if (closeBtn) closeBtn.addEventListener('click', function () { banner.style.display = 'none'; document.body.classList.remove('pair-banner-visible'); });
+      }
+      if (success) success.style.display = 'none';
+      document.body.classList.add('pair-banner-visible');
+      return;
+    }
+
+    try {
+      initFirebaseIfNeeded();
+    } catch (e) {
+      console.error('Firebase 初始化失败', e);
+      banner.style.display = 'block';
+      if (inner) {
+        inner.innerHTML = '<span class="pair-label">与对象同步：</span>' +
+          '<span class="pair-warn">Firebase 初始化失败：' + (e && e.message ? e.message : String(e)) + '</span>' +
+          '<button type="button" class="pair-close" aria-label="关闭">×</button>';
+        inner.style.display = 'block';
+        var closeBtn = inner.querySelector('.pair-close');
+        if (closeBtn) closeBtn.addEventListener('click', function () { banner.style.display = 'none'; document.body.classList.remove('pair-banner-visible'); });
+      }
+      if (success) success.style.display = 'none';
+      document.body.classList.add('pair-banner-visible');
+      return;
+    }
+
+    var roomId = getRoomId();
+    if (roomId) {
+      if (banner) banner.style.display = 'block';
+      if (inner) inner.style.display = 'none';
+      if (success) success.style.display = 'block';
+      if (codeDisplay) codeDisplay.textContent = roomId;
+      document.body.classList.add('pair-banner-visible');
+      startCloudListen();
+      bindPairButtons(banner, inner, success, codeDisplay);
+      initPairMore();
+      return;
+    }
+
+    banner.style.display = 'block';
+    if (inner) inner.style.display = 'block';
+    if (success) success.style.display = 'none';
+    document.body.classList.add('pair-banner-visible');
+    bindPairButtons(banner, inner, success, codeDisplay);
+    initPairMore();
+  }
+
+  function updatePairUI() {
+    var roomId = getRoomId();
+    var banner = byId('pair-banner');
+    var inner = banner ? banner.querySelector('.pair-banner-inner') : null;
+    var success = byId('pair-success');
+    var codeDisplay = byId('pair-code-display');
+    if (banner && inner && success && codeDisplay) {
+      if (roomId) {
+        inner.style.display = 'none';
+        success.style.display = 'block';
+        codeDisplay.textContent = roomId;
+      } else {
+        inner.style.display = 'block';
+        success.style.display = 'none';
+      }
+    }
+    var moreCard = byId('pair-more-card');
+    var moreForm = byId('pair-more-form');
+    var moreSuccess = byId('pair-more-success');
+    var codeDisplayMore = byId('pair-code-display-more');
+    if (moreCard && moreForm && moreSuccess && codeDisplayMore) {
+      if (roomId) {
+        moreForm.style.display = 'none';
+        moreSuccess.style.display = 'block';
+        codeDisplayMore.textContent = roomId;
+      } else {
+        moreForm.style.display = 'block';
+        moreSuccess.style.display = 'none';
+      }
+    }
+  }
+
+  function initPairMore() {
+    if (!isFirebaseEnabled()) return;
+    var moreCard = byId('pair-more-card');
+    var moreForm = byId('pair-more-form');
+    var moreSuccess = byId('pair-more-success');
+    var codeDisplayMore = byId('pair-code-display-more');
+    if (!moreCard) return;
+    moreCard.style.display = 'block';
+    updatePairUI();
+
+    var createBtnMore = byId('pair-create-btn-more');
+    var joinBtnMore = byId('pair-join-btn-more');
+    if (createBtnMore && !createBtnMore._pairBound) {
+      createBtnMore._pairBound = true;
+      createBtnMore.addEventListener('click', function () {
+        var code = Math.random().toString(36).slice(2, 8).toLowerCase();
+        setRoomId(code);
+        ensureCloudDefaults();
+        writeInitialRoomDoc().then(function () {
+          startCloudListen();
+          updatePairUI();
+        });
+      });
+    }
+    if (joinBtnMore && !joinBtnMore._pairBound) {
+      joinBtnMore._pairBound = true;
+      joinBtnMore.addEventListener('click', function () {
+        var input = byId('pair-code-input-more');
+        var code = (input ? input.value : '').trim().toLowerCase();
+        if (!code) return;
+        setRoomId(code);
+        startCloudListen();
+        updatePairUI();
+      });
+    }
+  }
+
+  function bindPairButtons(banner, inner, success, codeDisplay) {
+    var createBtn = byId('pair-create-btn');
+    var joinBtn = byId('pair-join-btn');
+    var closeBtn = byId('pair-close-btn');
+    if (createBtn) {
+      createBtn.addEventListener('click', function () {
+        var code = Math.random().toString(36).slice(2, 8).toLowerCase();
+        setRoomId(code);
+        ensureCloudDefaults();
+        writeInitialRoomDoc().then(function () {
+          startCloudListen();
+          updatePairUI();
+        });
+      });
+    }
+    if (joinBtn) {
+      joinBtn.addEventListener('click', function () {
+        var code = (byId('pair-code-input').value || '').trim().toLowerCase();
+        if (!code) return;
+        setRoomId(code);
+        startCloudListen();
+        updatePairUI();
+      });
+    }
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function () {
+        if (banner) banner.style.display = 'none';
+        document.body.classList.remove('pair-banner-visible');
+      });
+    }
+  }
 
   // ----- 工具 -----
   function byId(id) {
@@ -70,6 +365,12 @@
 
   // ----- 倒计时 -----
   function getStartDate() {
+    if (isSyncMode()) {
+      var raw = cloudData.startDate;
+      if (!raw) return null;
+      var d = new Date(raw);
+      return isNaN(d.getTime()) ? null : d;
+    }
     var raw = localStorage.getItem(STORAGE_KEYS.startDate);
     if (!raw) return null;
     var d = new Date(raw);
@@ -78,6 +379,11 @@
 
   function setStartDate(dateStr) {
     if (!dateStr) return;
+    if (isSyncMode()) {
+      cloudData.startDate = dateStr;
+      writeCloud('startDate', dateStr);
+      return;
+    }
     localStorage.setItem(STORAGE_KEYS.startDate, dateStr);
   }
 
@@ -132,20 +438,35 @@
 
   // ----- 相册 -----
   function getCategories() {
+    if (isSyncMode()) return Array.isArray(cloudData.categories) ? cloudData.categories : [];
     var list = getJSON(STORAGE_KEYS.categories, []);
     return Array.isArray(list) ? list : [];
   }
 
   function saveCategories(list) {
+    if (isSyncMode()) {
+      cloudData.categories = list;
+      writeCloud('categories', list);
+      return;
+    }
     setJSON(STORAGE_KEYS.categories, list);
   }
 
   function getPhotos() {
+    if (isSyncMode()) {
+      var list = Array.isArray(cloudData.photos) ? cloudData.photos : [];
+      return list.map(function (p) {
+        return { id: p.id, data: p.data, category: p.category || '', caption: p.caption || '', createdAt: p.createdAt || 0 };
+      });
+    }
     var list = getJSON(STORAGE_KEYS.photos, []);
     return Array.isArray(list) ? list : [];
   }
 
   function savePhotos(list) {
+    if (isSyncMode()) {
+      return;
+    }
     setJSON(STORAGE_KEYS.photos, list);
   }
 
@@ -180,9 +501,24 @@
   }
 
   function addPhoto(dataUrl, category, caption) {
+    var photoId = genId();
+    if (isSyncMode()) {
+      var photosRef = cloudPhotosRef();
+      if (!photosRef) return;
+      photosRef.doc(photoId).set({
+        data: dataUrl,
+        category: category || '',
+        caption: caption || '',
+        createdAt: Date.now()
+      }).then(function () {
+        renderAlbum();
+        syncCategorySelect();
+      });
+      return;
+    }
     var photos = getPhotos();
     photos.push({
-      id: genId(),
+      id: photoId,
       data: dataUrl,
       category: category || '',
       caption: caption || '',
@@ -192,6 +528,11 @@
   }
 
   function deletePhoto(id) {
+    if (isSyncMode()) {
+      var photosRef = cloudPhotosRef();
+      if (photosRef) photosRef.doc(id).delete();
+      return;
+    }
     var photos = getPhotos().filter(function (p) { return p.id !== id; });
     savePhotos(photos);
   }
@@ -274,6 +615,8 @@
       if (!files || !files.length) return;
       var category = (byId('album-category') || {}).value || '';
       var remaining = files.length;
+      var maxSize = isSyncMode() ? SYNC_PHOTO_SIZE : MAX_PHOTO_SIZE;
+      var quality = isSyncMode() ? SYNC_PHOTO_QUALITY : PHOTO_QUALITY;
       function done() {
         remaining--;
         if (remaining <= 0) {
@@ -288,7 +631,7 @@
             done();
             return;
           }
-          resizeImageToDataUrl(file, MAX_PHOTO_SIZE, PHOTO_QUALITY, function (dataUrl) {
+          resizeImageToDataUrl(file, maxSize, quality, function (dataUrl) {
             if (dataUrl) addPhoto(dataUrl, category, '');
             done();
           });
@@ -330,6 +673,12 @@
       var id = byId('photo-modal').getAttribute('data-current-id');
       var caption = (byId('photo-modal-caption').value || '').trim();
       if (!id) return;
+      if (isSyncMode()) {
+        var photosRef = cloudPhotosRef();
+        if (photosRef) photosRef.doc(id).update({ caption: caption });
+        closePhotoModal();
+        return;
+      }
       var photos = getPhotos();
       var photo = photos.find(function (p) { return p.id === id; });
       if (photo) {
@@ -342,11 +691,17 @@
 
   // ----- 目标 -----
   function getGoals() {
+    if (isSyncMode()) return Array.isArray(cloudData.goals) ? cloudData.goals : [];
     var list = getJSON(STORAGE_KEYS.goals, []);
     return Array.isArray(list) ? list : [];
   }
 
   function saveGoals(list) {
+    if (isSyncMode()) {
+      cloudData.goals = list;
+      writeCloud('goals', list);
+      return;
+    }
     setJSON(STORAGE_KEYS.goals, list);
   }
 
@@ -427,6 +782,7 @@
         qsAll('.filter-btn').forEach(function (b) { b.classList.remove('active'); });
         btn.classList.add('active');
         filter = btn.getAttribute('data-filter') || 'all';
+        currentGoalFilter = filter;
         renderGoals(filter);
       });
     });
@@ -467,11 +823,17 @@
 
   // ----- 留言 -----
   function getMessages() {
+    if (isSyncMode()) return Array.isArray(cloudData.messages) ? cloudData.messages : [];
     var list = getJSON(STORAGE_KEYS.messages, []);
     return Array.isArray(list) ? list : [];
   }
 
   function saveMessages(list) {
+    if (isSyncMode()) {
+      cloudData.messages = list;
+      writeCloud('messages', list);
+      return;
+    }
     setJSON(STORAGE_KEYS.messages, list);
   }
 
@@ -525,10 +887,16 @@
 
   // ----- 关于我们 -----
   function getAbout() {
+    if (isSyncMode()) return cloudData.about && typeof cloudData.about === 'object' ? cloudData.about : { story: '', name1: '', name2: '' };
     return getJSON(STORAGE_KEYS.about, { story: '', name1: '', name2: '' }) || {};
   }
 
   function saveAbout(data) {
+    if (isSyncMode()) {
+      cloudData.about = data;
+      writeCloud('about', data);
+      return;
+    }
     setJSON(STORAGE_KEYS.about, data);
   }
 
@@ -570,11 +938,17 @@
 
   // ----- 共享位置 -----
   function getLocations() {
+    if (isSyncMode()) return Array.isArray(cloudData.locations) ? cloudData.locations : [];
     var list = getJSON(STORAGE_KEYS.locations, []);
     return Array.isArray(list) ? list : [];
   }
 
   function saveLocations(list) {
+    if (isSyncMode()) {
+      cloudData.locations = list;
+      writeCloud('locations', list);
+      return;
+    }
     setJSON(STORAGE_KEYS.locations, list);
   }
 
@@ -659,6 +1033,7 @@
 
   // ----- 消息提醒 -----
   function getReminderSettings() {
+    if (isSyncMode()) return cloudData.reminderSettings && typeof cloudData.reminderSettings === 'object' ? cloudData.reminderSettings : { advanceDays: 0, dailyTime: '20:00', dailyOn: false, lastNotifiedDate: null };
     return getJSON(STORAGE_KEYS.reminderSettings, {
       advanceDays: 0,
       dailyTime: '20:00',
@@ -668,6 +1043,11 @@
   }
 
   function saveReminderSettings(s) {
+    if (isSyncMode()) {
+      cloudData.reminderSettings = s;
+      writeCloud('reminderSettings', s);
+      return;
+    }
     setJSON(STORAGE_KEYS.reminderSettings, s);
   }
 
@@ -763,6 +1143,7 @@
 
   // ----- 入口 -----
   function init() {
+    initPairBanner();
     initNav();
     initCountdown();
     initAlbum();

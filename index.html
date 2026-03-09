@@ -38,6 +38,18 @@
     </div>
   </nav>
 
+  <!-- 配对码：与对象同步 -->
+  <div id="pair-banner" class="pair-banner" style="display: none;">
+    <div class="pair-banner-inner">
+      <span class="pair-label">与对象同步：</span>
+      <input type="text" id="pair-code-input" class="doodle-input pair-input" placeholder="输入 6 位配对码" maxlength="6">
+      <button type="button" id="pair-join-btn" class="btn-cute small">进入</button>
+      <button type="button" id="pair-create-btn" class="btn-cute small outline">生成配对码</button>
+      <button type="button" id="pair-close-btn" class="pair-close" aria-label="关闭">×</button>
+    </div>
+    <div id="pair-success" class="pair-success" style="display: none;">已同步 · 配对码：<strong id="pair-code-display"></strong>（把此码发给对方即可）</div>
+  </div>
+
   <main class="main-content">
     <!-- 首页：倒计时 -->
     <section id="page-home" class="page active">
@@ -153,9 +165,23 @@
       <div class="tape tape-6"></div>
     </section>
 
-    <!-- 更多：位置 + 提醒 -->
+    <!-- 更多：同步 + 位置 + 提醒 -->
     <section id="page-more" class="page">
       <h1 class="doodle-title page-title">位置与提醒</h1>
+
+      <!-- 与对象同步（手机端入口，电脑端顶部也有横幅） -->
+      <div id="pair-more-card" class="ins-card more-block pair-more-card" style="display: none;">
+        <h2 class="ins-card-title">🔗 与对象同步</h2>
+        <p class="ins-desc">生成配对码发给对方，或输入对方的配对码，即可共享相册、目标与留言</p>
+        <div id="pair-more-form" class="pair-more-form">
+          <input type="text" id="pair-code-input-more" class="doodle-input pair-input" placeholder="输入 6 位配对码" maxlength="6">
+          <div class="pair-more-actions">
+            <button type="button" id="pair-join-btn-more" class="btn-cute">输入配对码进入</button>
+            <button type="button" id="pair-create-btn-more" class="btn-cute outline">生成配对码</button>
+          </div>
+        </div>
+        <div id="pair-more-success" class="pair-more-success" style="display: none;">已同步 · 配对码：<strong id="pair-code-display-more"></strong>（把此码发给对方即可）</div>
+      </div>
 
       <div class="ins-card more-block">
         <h2 class="ins-card-title">📍 共享位置</h2>
@@ -232,6 +258,9 @@
     </div>
   </div>
 
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
