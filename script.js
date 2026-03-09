@@ -94,12 +94,12 @@
     ref.onSnapshot(function (snap) {
       var data = snap.exists() ? snap.data() : {};
       cloudData.startDate = data.startDate;
-      cloudData.categories = data.categories;
-      cloudData.goals = data.goals;
-      cloudData.messages = data.messages;
-      cloudData.locations = data.locations;
-      cloudData.about = data.about;
-      cloudData.reminderSettings = data.reminderSettings;
+      cloudData.categories = Array.isArray(data.categories) ? data.categories : [];
+      cloudData.goals = Array.isArray(data.goals) ? data.goals : [];
+      cloudData.messages = Array.isArray(data.messages) ? data.messages : [];
+      cloudData.locations = Array.isArray(data.locations) ? data.locations : [];
+      cloudData.about = data.about && typeof data.about === 'object' ? data.about : {};
+      cloudData.reminderSettings = data.reminderSettings && typeof data.reminderSettings === 'object' ? data.reminderSettings : {};
       ensureCloudDefaults();
       refreshAll();
     }, function (err) { console.warn('Firestore listen error', err); });
@@ -120,7 +120,15 @@
   function writeCloud(key, value) {
     var ref = cloudDocRef();
     if (!ref) return Promise.resolve();
-    return ref.set({ [key]: value }, { merge: true });
+    return ref.set({ [key]: value }, { merge: true }).catch(function (err) {
+      console.error('Firestore write error', key, err);
+      var msg = (err && err.message) ? err.message : String(err);
+      if (msg.indexOf('permission') !== -1 || msg.indexOf('Permission') !== -1) {
+        alert('同步失败：没有写入权限，请到 Firebase 控制台发布 Firestore 规则。');
+      } else {
+        alert('同步失败（' + key + '）：' + msg);
+      }
+    });
   }
 
   function writeInitialRoomDoc() {
@@ -135,7 +143,15 @@
       reminderSettings: getJSON(STORAGE_KEYS.reminderSettings, {}) || {},
       startDate: localStorage.getItem(STORAGE_KEYS.startDate) || null
     };
-    return ref.set(initial, { merge: true });
+    return ref.set(initial, { merge: true }).catch(function (err) {
+      console.error('Firestore initial room write error', err);
+      var msg = (err && err.message) ? err.message : String(err);
+      if (msg.indexOf('permission') !== -1 || msg.indexOf('Permission') !== -1) {
+        alert('同步失败：没有写入权限，请到 Firebase 控制台发布 Firestore 规则。');
+      } else {
+        alert('创建房间失败：' + msg);
+      }
+    });
   }
 
   function ensureCloudDefaults() {
@@ -1214,5 +1230,11 @@
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
+  }
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function () {});
+    });
   }
 })();
