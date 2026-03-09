@@ -1,0 +1,13 @@
+{
+  "name": "love-memorial",
+  "version": "1.0.0",
+  "description": "情侣纪念日小站（前端 + Firebase + 阿里云 OSS 上传服务）",
+  "private": true,
+  "scripts": {
+    "dev": "npx serve -l 3000 ."
+  },
+  "dependencies": {
+    "ali-oss": "^6.18.1"
+  }
+}
+

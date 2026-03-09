@@ -499,11 +499,28 @@
     if (isSyncMode()) {
       var list = Array.isArray(cloudData.photos) ? cloudData.photos : [];
       return list.map(function (p) {
-        return { id: p.id, data: p.data, category: p.category || '', caption: p.caption || '', createdAt: p.createdAt || 0 };
+        return {
+          id: p.id,
+          data: p.data,
+          category: p.category || '',
+          caption: p.caption || '',
+          createdAt: p.createdAt || 0,
+          ossUrl: p.ossUrl || ''
+        };
       });
     }
     var list = getJSON(STORAGE_KEYS.photos, []);
-    return Array.isArray(list) ? list : [];
+    if (!Array.isArray(list)) return [];
+    return list.map(function (p) {
+      return {
+        id: p.id,
+        data: p.data,
+        category: p.category || '',
+        caption: p.caption || '',
+        createdAt: p.createdAt || 0,
+        ossUrl: p.ossUrl || ''
+      };
+    });
   }
 
   function savePhotos(list) {
@@ -543,6 +560,34 @@
     img.src = url;
   }
 
+  function uploadPhotoToOssIfNeeded(file, cb) {
+    if (!isSyncMode()) {
+      cb(null);
+      return;
+    }
+    if (!file || !file.size) {
+      cb(null);
+      return;
+    }
+    var roomId = getRoomId() || 'default';
+    file.arrayBuffer().then(function (buf) {
+      return fetch('/api/oss-upload?roomId=' + encodeURIComponent(roomId) + '&fileName=' + encodeURIComponent(file.name || 'photo.jpg'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream' },
+        body: buf
+      });
+    }).then(function (res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    }).then(function (data) {
+      cb((data && (data.url || data.location)) || null);
+    }).catch(function (err) {
+      console.error('uploadPhotoToOssIfNeeded error', err);
+      alert('上传原图到云存储失败，但缩略图仍会保存：' + (err && err.message ? err.message : String(err)));
+      cb(null);
+    });
+  }
+
   function doAddPhotoToCloud(photosRef, photoId, payload) {
     photosRef.doc(photoId).set(payload).then(function () {
       renderAlbum();
@@ -560,7 +605,7 @@
     });
   }
 
-  function addPhoto(dataUrl, category, caption) {
+  function addPhoto(dataUrl, category, caption, ossUrl) {
     var photoId = genId();
     if (isSyncMode()) {
       var photosRef = cloudPhotosRef();
@@ -573,7 +618,8 @@
         data: dataUrl,
         category: category || '',
         caption: caption || '',
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        ossUrl: ossUrl || ''
       });
       return;
     }
@@ -583,7 +629,8 @@
       data: dataUrl,
       category: category || '',
       caption: caption || '',
-      createdAt: Date.now()
+      createdAt: Date.now(),
+      ossUrl: ossUrl || ''
     });
     savePhotos(photos);
   }
@@ -636,7 +683,7 @@
       div.className = 'album-item';
       div.setAttribute('data-id', p.id);
       var img = document.createElement('img');
-      img.src = p.data;
+      img.src = p.data || p.ossUrl || '';
       img.alt = p.caption || '照片';
       var tag = document.createElement('span');
       tag.className = 'album-category-tag';
@@ -657,7 +704,7 @@
     var imgEl = byId('photo-modal-img');
     var captionEl = byId('photo-modal-caption');
     if (modal && imgEl) {
-      imgEl.src = photo.data;
+      imgEl.src = photo.ossUrl || photo.data;
       imgEl.alt = photo.caption || '';
       if (captionEl) captionEl.value = photo.caption || '';
       modal.setAttribute('data-current-id', photo.id);
@@ -695,9 +742,11 @@
             done();
             return;
           }
-          resizeImageToDataUrl(file, maxSize, quality, function (dataUrl) {
-            if (dataUrl) addPhoto(dataUrl, category, '');
-            done();
+          uploadPhotoToOssIfNeeded(file, function (ossUrl) {
+            resizeImageToDataUrl(file, maxSize, quality, function (dataUrl) {
+              if (dataUrl) addPhoto(dataUrl, category, '', ossUrl);
+              done();
+            });
           });
         })(files[i]);
       }
