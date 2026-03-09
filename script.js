@@ -167,6 +167,7 @@
       }
       if (success) success.style.display = 'none';
       document.body.classList.add('pair-banner-visible');
+      showPairMoreCardOnly('未检测到 Firebase 配置，请用电脑或部署后的网址打开本页。');
       return;
     }
 
@@ -185,6 +186,7 @@
       }
       if (success) success.style.display = 'none';
       document.body.classList.add('pair-banner-visible');
+      initPairMore(true);
       return;
     }
 
@@ -241,7 +243,24 @@
     }
   }
 
-  function initPairMore() {
+  function showPairMoreCardOnly(message) {
+    var moreCard = byId('pair-more-card');
+    if (!moreCard) return;
+    moreCard.style.display = 'block';
+    var moreForm = byId('pair-more-form');
+    var moreSuccess = byId('pair-more-success');
+    if (moreForm) moreForm.style.display = 'none';
+    if (moreSuccess) moreSuccess.style.display = 'none';
+    var wrap = moreCard.querySelector('.pair-more-error-wrap');
+    if (wrap) wrap.remove();
+    var errDiv = document.createElement('div');
+    errDiv.className = 'pair-more-error-wrap pair-warn';
+    errDiv.textContent = message || '同步功能暂时不可用，请稍后重试。';
+    var formEl = byId('pair-more-form');
+    moreCard.insertBefore(errDiv, formEl || moreCard.firstChild);
+  }
+
+  function initPairMore(initFailed) {
     if (!isFirebaseEnabled()) return;
     var moreCard = byId('pair-more-card');
     var moreForm = byId('pair-more-form');
@@ -249,6 +268,14 @@
     var codeDisplayMore = byId('pair-code-display-more');
     if (!moreCard) return;
     moreCard.style.display = 'block';
+    var errWrap = moreCard.querySelector('.pair-more-error-wrap');
+    if (errWrap) errWrap.remove();
+    if (initFailed) {
+      showPairMoreCardOnly('Firebase 初始化失败，请检查网络或稍后重试。');
+      return;
+    }
+    moreForm.style.display = '';
+    moreSuccess.style.display = '';
     updatePairUI();
 
     var createBtnMore = byId('pair-create-btn-more');

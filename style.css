@@ -216,6 +216,13 @@ body.pair-banner-visible .main-content {
   padding: 8px 0;
 }
 
+.pair-more-error-wrap {
+  font-size: 0.85rem;
+  color: var(--ins-pink);
+  margin: 8px 0;
+  padding: 8px 0;
+}
+
 .btn-cute.outline {
   background: transparent;
   color: var(--ins-pink);
