@@ -14,8 +14,8 @@
 
   var MAX_PHOTO_SIZE = 600;
   var PHOTO_QUALITY = 0.75;
-  var SYNC_PHOTO_SIZE = 400;
-  var SYNC_PHOTO_QUALITY = 0.6;
+  var SYNC_PHOTO_SIZE = 280;
+  var SYNC_PHOTO_QUALITY = 0.5;
 
   var ROOM_ID_KEY = 'love_memorial_roomId';
   var firebaseApp = null;
@@ -527,19 +527,37 @@
     img.src = url;
   }
 
+  function doAddPhotoToCloud(photosRef, photoId, payload) {
+    photosRef.doc(photoId).set(payload).then(function () {
+      renderAlbum();
+      syncCategorySelect();
+    }).catch(function (err) {
+      console.error('Firestore photo write error', err);
+      var msg = (err && err.message) ? err.message : String(err);
+      if (msg.indexOf('resource-exhausted') !== -1 || msg.indexOf('payload') !== -1 || msg.indexOf('too large') !== -1) {
+        alert('照片体积过大，请选择更小或更简单的图片重试。');
+      } else if (msg.indexOf('permission') !== -1 || msg.indexOf('Permission') !== -1) {
+        alert('没有写入权限，请到 Firebase 控制台发布 Firestore 规则。');
+      } else {
+        alert('照片上传失败：' + msg);
+      }
+    });
+  }
+
   function addPhoto(dataUrl, category, caption) {
     var photoId = genId();
     if (isSyncMode()) {
       var photosRef = cloudPhotosRef();
-      if (!photosRef) return;
-      photosRef.doc(photoId).set({
+      if (!photosRef) {
+        console.warn('cloudPhotosRef is null');
+        alert('同步未就绪，请刷新页面后重试。');
+        return;
+      }
+      doAddPhotoToCloud(photosRef, photoId, {
         data: dataUrl,
         category: category || '',
         caption: caption || '',
         createdAt: Date.now()
-      }).then(function () {
-        renderAlbum();
-        syncCategorySelect();
       });
       return;
     }
@@ -557,7 +575,10 @@
   function deletePhoto(id) {
     if (isSyncMode()) {
       var photosRef = cloudPhotosRef();
-      if (photosRef) photosRef.doc(id).delete();
+      if (photosRef) photosRef.doc(id).delete().catch(function (err) {
+        console.error('Firestore photo delete error', err);
+        alert('删除失败：' + ((err && err.message) ? err.message : String(err)));
+      });
       return;
     }
     var photos = getPhotos().filter(function (p) { return p.id !== id; });
@@ -702,8 +723,16 @@
       if (!id) return;
       if (isSyncMode()) {
         var photosRef = cloudPhotosRef();
-        if (photosRef) photosRef.doc(id).update({ caption: caption });
-        closePhotoModal();
+        if (photosRef) {
+          photosRef.doc(id).update({ caption: caption }).then(function () {
+            closePhotoModal();
+          }).catch(function (err) {
+            console.error('Firestore caption update error', err);
+            alert('保存说明失败：' + ((err && err.message) ? err.message : String(err)));
+          });
+        } else {
+          closePhotoModal();
+        }
         return;
       }
       var photos = getPhotos();
