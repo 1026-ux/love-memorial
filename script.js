@@ -40,6 +40,12 @@
     if (id) localStorage.setItem(ROOM_ID_KEY, id);
   }
 
+  function clearRoomId() {
+    try {
+      localStorage.removeItem(ROOM_ID_KEY);
+    } catch (e) {}
+  }
+
   function initFirebaseIfNeeded() {
     if (!isFirebaseEnabled() || firebaseApp) return true;
     try {
@@ -256,6 +262,24 @@
         moreForm.style.display = 'block';
         moreSuccess.style.display = 'none';
       }
+    }
+
+    var resetBtn = byId('pair-reset-btn');
+    var resetBtnMore = byId('pair-reset-btn-more');
+    var handler = function () {
+      if (!confirm('重新生成配对码会创建一个全新的共享空间，旧配对码下的数据仍然保留，但需要手动切回旧码查看。确定要重新生成吗？')) return;
+      clearRoomId();
+      cloudData = {};
+      ensureCloudDefaults();
+      location.reload();
+    };
+    if (resetBtn && !resetBtn._pairBound) {
+      resetBtn._pairBound = true;
+      resetBtn.addEventListener('click', handler);
+    }
+    if (resetBtnMore && !resetBtnMore._pairBound) {
+      resetBtnMore._pairBound = true;
+      resetBtnMore.addEventListener('click', handler);
     }
   }
 
