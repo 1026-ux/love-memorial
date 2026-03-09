@@ -12,10 +12,10 @@
     reminderSettings: 'love_memorial_reminder_settings'
   };
 
-  var MAX_PHOTO_SIZE = 600;
-  var PHOTO_QUALITY = 0.75;
-  var SYNC_PHOTO_SIZE = 280;
-  var SYNC_PHOTO_QUALITY = 0.5;
+  var MAX_PHOTO_SIZE = 1400;
+  var PHOTO_QUALITY = 0.85;
+  var SYNC_PHOTO_SIZE = 900;
+  var SYNC_PHOTO_QUALITY = 0.8;
 
   var ROOM_ID_KEY = 'love_memorial_roomId';
   var firebaseApp = null;
@@ -683,7 +683,7 @@
       div.className = 'album-item';
       div.setAttribute('data-id', p.id);
       var img = document.createElement('img');
-      img.src = p.data || p.ossUrl || '';
+      img.src = p.ossUrl || p.data || '';
       img.alt = p.caption || '照片';
       var tag = document.createElement('span');
       tag.className = 'album-category-tag';

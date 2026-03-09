@@ -1,5 +1,5 @@
 /* 纪念日 PWA Service Worker - 缓存静态资源，支持离线与安装 */
-var CACHE_NAME = 'love-memorial-v2';
+var CACHE_NAME = 'love-memorial-v3';
 var urlsToCache = [
   '/',
   '/index.html',
